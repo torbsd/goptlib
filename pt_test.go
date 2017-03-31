@@ -13,6 +13,32 @@ import (
 	"testing"
 )
 
+func TestErrors(t *testing.T) {
+	Stdout = ioutil.Discard
+
+	var err error
+	err = envError("XYZ")
+	if err.Error() != "ENV-ERROR XYZ" {
+		t.Errorf("unexpected string %q from envError", err.Error())
+	}
+	err = versionError("XYZ")
+	if err.Error() != "VERSION-ERROR XYZ" {
+		t.Errorf("unexpected string %q from versionError", err.Error())
+	}
+	err = CmethodError("method", "XYZ")
+	if err.Error() != "CMETHOD-ERROR method XYZ" {
+		t.Errorf("unexpected string %q from CmethodError", err.Error())
+	}
+	err = SmethodError("method", "XYZ")
+	if err.Error() != "SMETHOD-ERROR method XYZ" {
+		t.Errorf("unexpected string %q from SmethodError", err.Error())
+	}
+	err = ProxyError("XYZ")
+	if err.Error() != "PROXY-ERROR XYZ" {
+		t.Errorf("unexpected string %q from ProxyError", err.Error())
+	}
+}
+
 func TestKeywordIsSafe(t *testing.T) {
 	tests := [...]struct {
 		keyword  string
