@@ -300,7 +300,7 @@ func SmethodError(methodName, msg string) error {
 // Emit a PROXY-ERROR line with explanation text. Returns a representation of
 // the error.
 func ProxyError(msg string) error {
-	return doError("PROXY-ERROR %s\n", msg)
+	return doError("PROXY-ERROR", msg)
 }
 
 // Emit a CMETHOD line. socks must be "socks4" or "socks5". Call this once for
