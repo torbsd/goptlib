@@ -42,7 +42,7 @@
 // 		if ptInfo.ProxyURL != nil {
 // 			// you need to interpret the proxy URL yourself
 // 			// call pt.ProxyDone instead if it's a type you understand
-// 			pt.ProxyError("proxy %s is not supported")
+// 			pt.ProxyError(fmt.Sprintf("proxy %s is not supported", ptInfo.ProxyURL))
 // 			os.Exit(1)
 // 		}
 // 		for _, methodName := range ptInfo.MethodNames {
