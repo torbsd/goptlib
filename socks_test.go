@@ -3,8 +3,8 @@ package pt
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"encoding/hex"
+	"errors"
 	"io"
 	"net"
 	"testing"
