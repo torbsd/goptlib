@@ -449,7 +449,7 @@ type ClientInfo struct {
 // was a list of transport names to use in case Tor requested "*". That feature
 // was never implemented and has been removed from the pluggable transports
 // specification.
-// https://trac.torproject.org/projects/tor/ticket/15612
+// https://bugs.torproject.org/15612
 func ClientSetup(_ []string) (info ClientInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
@@ -494,6 +494,7 @@ func resolveAddr(addrStr string) (*net.TCPAddr, error) {
 		// Before the fixing of bug #7011, tor doesn't put brackets around IPv6
 		// addresses. Split after the last colon, assuming it is a port
 		// separator, and try adding the brackets.
+		// https://bugs.torproject.org/7011
 		parts := strings.Split(addrStr, ":")
 		if len(parts) <= 2 {
 			return nil, err
@@ -654,7 +655,7 @@ type ServerInfo struct {
 // was a list of transport names to use in case Tor requested "*". That feature
 // was never implemented and has been removed from the pluggable transports
 // specification.
-// https://trac.torproject.org/projects/tor/ticket/15612
+// https://bugs.torproject.org/15612
 func ServerSetup(_ []string) (info ServerInfo, err error) {
 	ver, err := getManagedTransportVer()
 	if err != nil {
@@ -773,6 +774,7 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 	// Work around tor bug #15240 where the auth cookie is generated after
 	// pluggable transports are launched, leading to a stale cookie getting
 	// cached forever if it is only read once as part of ServerSetup.
+	// https://bugs.torproject.org/15240
 	authCookie, err := readAuthCookieFile(info.AuthCookiePath)
 	if err != nil {
 		return fmt.Errorf("error reading TOR_PT_AUTH_COOKIE_FILE %q: %s", info.AuthCookiePath, err.Error())

@@ -181,7 +181,7 @@ func TestGetClientTransports(t *testing.T) {
 		},
 		// In the past, "*" meant to return all known transport names.
 		// But now it has no special meaning.
-		// https://trac.torproject.org/projects/tor/ticket/15612
+		// https://bugs.torproject.org/15612
 		{
 			"*",
 			[]string{"*"},
@@ -381,7 +381,7 @@ func TestGetServerBindaddrs(t *testing.T) {
 		},
 		// In the past, "*" meant to return all known transport names.
 		// But now it has no special meaning.
-		// https://trac.torproject.org/projects/tor/ticket/15612
+		// https://bugs.torproject.org/15612
 		{
 			"alpha-1.2.3.4:1111,beta-[1:2::3:4]:2222",
 			"*",
