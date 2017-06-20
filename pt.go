@@ -120,10 +120,10 @@
 // https://spec.torproject.org/pt-spec
 //
 // Extended ORPort:
-// https://gitweb.torproject.org/torspec.git/tree/proposals/196-transport-control-ports.txt.
+// https://gitweb.torproject.org/torspec.git/tree/proposals/196-transport-control-ports.txt
 //
 // Extended ORPort Authentication:
-// https://gitweb.torproject.org/torspec.git/tree/proposals/217-ext-orport-auth.txt.
+// https://gitweb.torproject.org/torspec.git/tree/proposals/217-ext-orport-auth.txt
 //
 // Pluggable Transport through SOCKS proxy:
 // https://gitweb.torproject.org/torspec.git/tree/proposals/232-pluggable-transports-through-proxy.txt
