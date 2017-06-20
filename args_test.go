@@ -139,6 +139,10 @@ func TestParseClientParameters(t *testing.T) {
 			Args{"a": []string{"b=c"}},
 		},
 		{
+			"a=bc==",
+			Args{"a": []string{"bc=="}},
+		},
+		{
 			"key=a\nb",
 			Args{"key": []string{"a\nb"}},
 		},
@@ -256,6 +260,18 @@ func TestParseServerTransportOptions(t *testing.T) {
 			"t:k=v",
 			map[string]Args{
 				"t": {"k": []string{"v"}},
+			},
+		},
+		{
+			"t:k=v=v",
+			map[string]Args{
+				"t": {"k": []string{"v=v"}},
+			},
+		},
+		{
+			"t:k=vv==",
+			map[string]Args{
+				"t": {"k": []string{"vv=="}},
 			},
 		},
 		{
