@@ -58,10 +58,9 @@ func indexUnescaped(s string, term []byte) (int, string, error) {
 
 // Parse a name–value mapping as from an encoded SOCKS username/password.
 //
-// "If any [k=v] items are provided, they are configuration parameters for the
-// proxy: Tor should separate them with semicolons ... If a key or value value
-// must contain [an equals sign or] a semicolon or a backslash, it is escaped
-// with a backslash."
+// "First the '<Key>=<Value>' formatted arguments MUST be escaped, such that all
+// backslash, equal sign, and semicolon characters are escaped with a
+// backslash."
 func parseClientParameters(s string) (args Args, err error) {
 	args = make(Args)
 	if len(s) == 0 {
@@ -108,10 +107,11 @@ func parseClientParameters(s string) (args Args, err error) {
 
 // Parse a transport–name–value mapping as from TOR_PT_SERVER_TRANSPORT_OPTIONS.
 //
-// "<value> is a k=v string value with options that are to be passed to the
-// transport. Colons, semicolons, equal signs and backslashes must be escaped
-// with a backslash."
-// Example: trebuchet:secret=nou;trebuchet:cache=/tmp/cache;ballista:secret=yes
+// "...a semicolon-separated list of <key>:<value> pairs, where <key> is a PT
+// name and <value> is a k=v string value with options that are to be passed to
+// the transport. Colons, semicolons, equal signs and backslashes must be
+// escaped with a backslash."
+// Example: scramblesuit:key=banana;automata:rule=110;automata:depth=3
 func parseServerTransportOptions(s string) (opts map[string]Args, err error) {
 	opts = make(map[string]Args)
 	if len(s) == 0 {
@@ -192,7 +192,7 @@ func backslashEscape(s string, set []byte) string {
 // of an SMETHOD line. The output is sorted by key. The "ARGS:" prefix is not
 // added.
 //
-// "Equal signs and commas [and backslashes] must be escaped with a backslash."
+// "Equal signs and commas [and backslashes] MUST be escaped with a backslash."
 func encodeSmethodArgs(args Args) string {
 	if args == nil {
 		return ""

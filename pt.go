@@ -803,7 +803,7 @@ func extOrPortAuthenticate(s io.ReadWriter, info *ServerInfo) error {
 	return nil
 }
 
-// See section 3.1 of 196-transport-control-ports.txt.
+// See section 3.1.1 of 196-transport-control-ports.txt.
 const (
 	extOrCmdDone      = 0x0000
 	extOrCmdUserAddr  = 0x0001
