@@ -616,7 +616,7 @@ func readAuthCookie(f io.Reader) ([]byte, error) {
 }
 
 // Read and validate the contents of an auth cookie file. Returns the 32-byte
-// cookie. See section 4.2.1.2 of pt-spec.txt.
+// cookie. See section 4.2.1.2 of 217-ext-orport-auth.txt.
 func readAuthCookieFile(filename string) ([]byte, error) {
 	f, err := os.Open(filename)
 	if err != nil {
