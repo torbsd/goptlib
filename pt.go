@@ -217,19 +217,18 @@ func getenvRequired(key string) (string, error) {
 // <KeywordChar> ::= <any US-ASCII alphanumeric, dash, and underscore>
 func keywordIsSafe(keyword string) bool {
 	for _, b := range []byte(keyword) {
-		if b >= '0' && b <= '9' {
+		switch {
+		case b >= '0' && b <= '9':
 			continue
-		}
-		if b >= 'A' && b <= 'Z' {
+		case b >= 'A' && b <= 'Z':
 			continue
-		}
-		if b >= 'a' && b <= 'z' {
+		case b >= 'a' && b <= 'z':
 			continue
-		}
-		if b == '-' || b == '_' {
+		case b == '-' || b == '_':
 			continue
+		default:
+			return false
 		}
-		return false
 	}
 	return true
 }
