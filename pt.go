@@ -218,11 +218,11 @@ func getenvRequired(key string) (string, error) {
 func keywordIsSafe(keyword string) bool {
 	for _, b := range []byte(keyword) {
 		switch {
-		case b >= '0' && b <= '9':
+		case '0' <= b && b <= '9':
 			continue
-		case b >= 'A' && b <= 'Z':
+		case 'A' <= b && b <= 'Z':
 			continue
-		case b >= 'a' && b <= 'z':
+		case 'a' <= b && b <= 'z':
 			continue
 		case b == '-' || b == '_':
 			continue
