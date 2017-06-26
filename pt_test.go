@@ -53,6 +53,7 @@ func TestKeywordIsSafe(t *testing.T) {
 		{"CMETHOD\x80", false},
 		{"CMETHOD\x81", false},
 		{"CMETHOD\xff", false},
+		{"\xffCMETHOD", false},
 		{"CMÉTHOD", false},
 	}
 
