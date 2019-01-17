@@ -25,10 +25,6 @@ import "git.torproject.org/pluggable-transports/goptlib.git"
 
 var ptInfo pt.ServerInfo
 
-// When a connection handler starts, +1 is written to this channel; when it
-// ends, -1 is written.
-var handlerChan = make(chan int)
-
 func copyLoop(a, b net.Conn) {
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -47,11 +43,6 @@ func copyLoop(a, b net.Conn) {
 
 func handler(conn net.Conn) error {
 	defer conn.Close()
-
-	handlerChan <- 1
-	defer func() {
-		handlerChan <- -1
-	}()
 
 	or, err := pt.DialOr(&ptInfo, conn.RemoteAddr().String(), "dummy")
 	if err != nil {
@@ -104,8 +95,6 @@ func main() {
 	}
 	pt.SmethodsDone()
 
-	var numHandlers int = 0
-	var sig os.Signal
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGTERM)
 
@@ -118,21 +107,11 @@ func main() {
 		}()
 	}
 
-	// keep track of handlers and wait for a signal
-	sig = nil
-	for sig == nil {
-		select {
-		case n := <-handlerChan:
-			numHandlers += n
-		case sig = <-sigChan:
-		}
-	}
+	// wait for a signal
+	<-sigChan
 
 	// signal received, shut down
 	for _, ln := range listeners {
 		ln.Close()
-	}
-	for numHandlers > 0 {
-		numHandlers += <-handlerChan
 	}
 }
