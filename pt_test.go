@@ -959,3 +959,131 @@ func TestMakeStateDir(t *testing.T) {
 		t.Errorf("MakeStateDir with a subdirectory of a file unexpectedly succeeded")
 	}
 }
+
+// Compare with unescape_string in tor's src/lib/encoding/cstring.c. That
+// function additionally allows hex escapes, but control-spec.txt's CString
+// doesn't say anything about that.
+func decodeCString(enc string) (string, error) {
+	var result bytes.Buffer
+	b := []byte(enc)
+	state := "^"
+	number := 0
+	i := 0
+	for i < len(b) {
+		c := b[i]
+		switch state {
+		case "^":
+			if c != '"' {
+				return "", fmt.Errorf("missing start quote")
+			}
+			state = "."
+		case ".":
+			switch c {
+			case '\\':
+				state = "\\"
+			case '"':
+				state = "$"
+			default:
+				result.WriteByte(c)
+			}
+		case "\\":
+			switch c {
+			case 'n':
+				result.WriteByte('\n')
+				state = "."
+			case 't':
+				result.WriteByte('\t')
+				state = "."
+			case 'r':
+				result.WriteByte('\r')
+				state = "."
+			case '"', '\\':
+				result.WriteByte(c)
+				state = "."
+			case '0', '1', '2', '3', '4', '5', '6', '7':
+				number = int(c - '0')
+				state = "o1"
+			default:
+				return "", fmt.Errorf("unknown escape \\%c", c)
+			}
+		case "o1": // 1 octal digit read
+			switch c {
+			case '0', '1', '2', '3', '4', '5', '6', '7':
+				number = number*8 + int(c-'0')
+				state = "o2"
+			default:
+				if number > 255 {
+					return "", fmt.Errorf("invalid octal escape")
+				}
+				result.WriteByte(byte(number))
+				state = "."
+				continue // process the current byte again
+			}
+		case "o2": // 2 octal digits read
+			switch c {
+			case '0', '1', '2', '3', '4', '5', '6', '7':
+				number = number*8 + int(c-'0')
+				if number > 255 {
+					return "", fmt.Errorf("invalid octal escape")
+				}
+				result.WriteByte(byte(number))
+				state = "."
+			default:
+				if number > 255 {
+					return "", fmt.Errorf("invalid octal escape")
+				}
+				result.WriteByte(byte(number))
+				state = "."
+				continue // process the current byte again
+			}
+		case "$":
+			return "", fmt.Errorf("trailing garbage")
+		}
+		i++
+	}
+	if state != "$" {
+		return "", fmt.Errorf("unexpected end of string")
+	}
+	return result.String(), nil
+}
+
+func roundtripCString(src string) (string, error) {
+	enc := encodeCString(src)
+	dec, err := decodeCString(enc)
+	if err != nil {
+		return enc, fmt.Errorf("failed to decode: %+q → %+q: %v", src, enc, err)
+	}
+	if dec != src {
+		return enc, fmt.Errorf("roundtrip failed: %+q → %+q → %+q", src, enc, dec)
+	}
+	return enc, nil
+}
+
+func TestEncodeCString(t *testing.T) {
+	tests := []string{
+		"",
+		"\"",
+		"\"\"",
+		"abc\"def",
+		"\\",
+		"\\\\",
+		"\x0123abc", // trap here is if you encode '\x01' as "\\1"; it would join with the following digits: "\\123abc".
+		"\n\r\t\x7f",
+		"\\377",
+	}
+	allBytes := make([]byte, 256)
+	for i := 0; i < len(allBytes); i++ {
+		allBytes[i] = byte(i)
+	}
+	tests = append(tests, string(allBytes))
+
+	for _, test := range tests {
+		enc, err := roundtripCString(test)
+		if err != nil {
+			t.Error(err)
+		}
+		if !argIsSafe(enc) {
+			t.Errorf("escaping %+q resulted in non-safe %+q", test, enc)
+		}
+	}
+}

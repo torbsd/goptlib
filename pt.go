@@ -24,6 +24,7 @@
 // 			conn, err := ln.AcceptSocks()
 // 			if err != nil {
 // 				if e, ok := err.(net.Error); ok && e.Temporary() {
+// 					pt.Log(pt.LogSeverityError, "accept error: " + err.Error())
 // 					continue
 // 				}
 // 				return err
@@ -83,6 +84,7 @@
 // 				if e, ok := err.(net.Error); ok && e.Temporary() {
 // 					continue
 // 				}
+// 				pt.Log(pt.LogSeverityError, "accept error: " + err.Error())
 // 				return err
 // 			}
 // 			go handler(conn)
@@ -345,6 +347,69 @@ func SmethodsDone() {
 // Emit a PROXY DONE line. Call this after parsing ClientInfo.ProxyURL.
 func ProxyDone() {
 	fmt.Fprintf(Stdout, "PROXY DONE\n")
+}
+
+// Unexported type to represent log severities, preventing external callers from
+// inventing new severity strings that may violate quoting rules.
+//
+// pt-spec.txt section 3.3.4 specifies quoting for MESSAGE, but not for
+// SEVERITY, and the example shows an unquoted "SEVERITY=debug". While we know
+// tor's parser permits quoting of SEVERITY, it's not actually specified.
+// Therefore we we need to guard against callers passing a string that violates
+// the global protocol constraint of "any US-ASCII character but NUL or NL." So
+// here, we instantiate exactly the five supported severities, using a type that
+// cannot be constructed outside the package.
+type logSeverity struct {
+	string
+}
+
+// Severity levels for the Log function.
+var (
+	LogSeverityError   = logSeverity{"error"}
+	LogSeverityWarning = logSeverity{"warning"}
+	LogSeverityNotice  = logSeverity{"notice"}
+	LogSeverityInfo    = logSeverity{"info"}
+	LogSeverityDebug   = logSeverity{"debug"}
+)
+
+// Encode a string according to the CString rules of section 2.1.1 in
+// control-spec.txt.
+// 	CString = DQUOTE *qcontent DQUOTE
+// "...in a CString, the escapes '\n', '\t', '\r', and the octal escapes '\0'
+// ... '\377' represent newline, tab, carriage return, and the 256 possible
+// octet values respectively."
+// RFC 2822 section 3.2.5 in turn defines what byte values we need to escape:
+// everything but
+// 	NO-WS-CTL /     ; Non white space controls
+// 	%d33 /          ; The rest of the US-ASCII
+// 	%d35-91 /       ;  characters not including "\"
+// 	%d93-126        ;  or the quote character
+// Technically control-spec.txt requires us to escape the space character (32),
+// but it is an error in the spec: https://bugs.torproject.org/29432.
+//
+// We additionally need to ensure that whatever we return passes argIsSafe,
+// because strings encoded by this function are printed verbatim by Log.
+func encodeCString(s string) string {
+	result := bytes.NewBuffer([]byte{})
+	result.WriteByte('"')
+	for _, c := range []byte(s) {
+		if c == 32 || c == 33 || (35 <= c && c <= 91) || (93 <= c && c <= 126) {
+			result.WriteByte(c)
+		} else {
+			fmt.Fprintf(result, "\\%03o", c)
+		}
+	}
+	result.WriteByte('"')
+	return result.String()
+}
+
+// Emit a LOG message with the given severity (one of LogSeverityError,
+// LogSeverityWarning, LogSeverityNotice, LogSeverityInfo, or LogSeverityDebug).
+func Log(severity logSeverity, message string) {
+	// "<Message> contains the log message which can be a String or CString..."
+	// encodeCString always makes the string safe to emit; i.e., it
+	// satisfies argIsSafe.
+	line("LOG", "SEVERITY="+severity.string, "MESSAGE="+encodeCString(message))
 }
 
 // Get a pluggable transports version offered by Tor and understood by us, if
