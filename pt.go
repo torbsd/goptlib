@@ -932,7 +932,11 @@ func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.SetDeadline(time.Now().Add(5 * time.Second))
+	err = s.SetDeadline(time.Now().Add(5 * time.Second))
+	if err != nil {
+		s.Close()
+		return nil, err
+	}
 	err = extOrPortAuthenticate(s, info)
 	if err != nil {
 		s.Close()
@@ -943,7 +947,11 @@ func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 		s.Close()
 		return nil, err
 	}
-	s.SetDeadline(time.Time{})
+	err = s.SetDeadline(time.Time{})
+	if err != nil {
+		s.Close()
+		return nil, err
+	}
 
 	return s, nil
 }
