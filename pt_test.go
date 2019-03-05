@@ -704,28 +704,28 @@ func TestExtOrPortRecvCommand(t *testing.T) {
 	}
 }
 
-// set up so that extOrPortSetup can write to one buffer and read from another.
-type mockSetupBuf struct {
+// set up so that extOrPortSetMetadata can write to one buffer and read from another.
+type mockSetMetadataBuf struct {
 	bytes.Buffer
 	ReadBuf bytes.Buffer
 }
 
-func (buf *mockSetupBuf) Read(p []byte) (int, error) {
+func (buf *mockSetMetadataBuf) Read(p []byte) (int, error) {
 	n, err := buf.ReadBuf.Read(p)
 	return n, err
 }
 
-func testExtOrPortSetupIndividual(t *testing.T, addr, methodName string) {
+func testExtOrPortSetMetadataIndividual(t *testing.T, addr, methodName string) {
 	var err error
-	var buf mockSetupBuf
+	var buf mockSetMetadataBuf
 	// fake an OKAY response.
 	err = extOrPortSendCommand(&buf.ReadBuf, extOrCmdOkay, []byte{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = extOrPortSetup(&buf, addr, methodName)
+	err = extOrPortSetMetadata(&buf, addr, methodName)
 	if err != nil {
-		t.Fatalf("error in extOrPortSetup: %s", err)
+		t.Fatalf("error in extOrPortSetMetadata: %s", err)
 	}
 	for {
 		cmd, body, err := extOrPortRecvCommand(&buf.Buffer)
@@ -751,13 +751,13 @@ func testExtOrPortSetupIndividual(t *testing.T, addr, methodName string) {
 	}
 }
 
-func TestExtOrPortSetup(t *testing.T) {
+func TestExtOrPortSetMetadata(t *testing.T) {
 	const addr = "127.0.0.1:40000"
 	const methodName = "alpha"
-	testExtOrPortSetupIndividual(t, "", "")
-	testExtOrPortSetupIndividual(t, addr, "")
-	testExtOrPortSetupIndividual(t, "", methodName)
-	testExtOrPortSetupIndividual(t, addr, methodName)
+	testExtOrPortSetMetadataIndividual(t, "", "")
+	testExtOrPortSetMetadataIndividual(t, addr, "")
+	testExtOrPortSetMetadataIndividual(t, "", methodName)
+	testExtOrPortSetMetadataIndividual(t, addr, methodName)
 }
 
 func TestMakeStateDir(t *testing.T) {

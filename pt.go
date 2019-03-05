@@ -883,7 +883,7 @@ func extOrPortRecvCommand(s io.Reader) (cmd uint16, body []byte, err error) {
 // OKAY or DENY response command from the server. If addr or methodName is "",
 // the corresponding command is not sent. Returns nil if and only if OKAY is
 // received.
-func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
+func extOrPortSetMetadata(s io.ReadWriter, addr, methodName string) error {
 	var err error
 
 	if addr != "" {
@@ -915,6 +915,27 @@ func extOrPortSetup(s io.ReadWriter, addr, methodName string) error {
 	return nil
 }
 
+func extOrPortSetup(s net.Conn, timeout time.Duration,
+	info *ServerInfo, addr, methodName string) error {
+	err := s.SetDeadline(time.Now().Add(5 * time.Second))
+	if err != nil {
+		return err
+	}
+	err = extOrPortAuthenticate(s, info)
+	if err != nil {
+		return err
+	}
+	err = extOrPortSetMetadata(s, addr, methodName)
+	if err != nil {
+		return err
+	}
+	err = s.SetDeadline(time.Time{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // Dial info.ExtendedOrAddr if defined, or else info.OrAddr, and return an open
 // *net.TCPConn. If connecting to the extended OR port, extended OR port
 // authentication à la 217-ext-orport-auth.txt is done before returning; an
@@ -932,22 +953,7 @@ func DialOr(info *ServerInfo, addr, methodName string) (*net.TCPConn, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = s.SetDeadline(time.Now().Add(5 * time.Second))
-	if err != nil {
-		s.Close()
-		return nil, err
-	}
-	err = extOrPortAuthenticate(s, info)
-	if err != nil {
-		s.Close()
-		return nil, err
-	}
-	err = extOrPortSetup(s, addr, methodName)
-	if err != nil {
-		s.Close()
-		return nil, err
-	}
-	err = s.SetDeadline(time.Time{})
+	err = extOrPortSetup(s, 5*time.Second, info, addr, methodName)
 	if err != nil {
 		s.Close()
 		return nil, err
