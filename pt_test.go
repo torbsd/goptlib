@@ -706,13 +706,16 @@ func TestExtOrPortRecvCommand(t *testing.T) {
 
 // set up so that extOrPortSetMetadata can write to one buffer and read from another.
 type mockSetMetadataBuf struct {
-	bytes.Buffer
-	ReadBuf bytes.Buffer
+	ReadBuf  bytes.Buffer
+	WriteBuf bytes.Buffer
 }
 
 func (buf *mockSetMetadataBuf) Read(p []byte) (int, error) {
-	n, err := buf.ReadBuf.Read(p)
-	return n, err
+	return buf.ReadBuf.Read(p)
+}
+
+func (buf *mockSetMetadataBuf) Write(p []byte) (int, error) {
+	return buf.WriteBuf.Write(p)
 }
 
 func testExtOrPortSetMetadataIndividual(t *testing.T, addr, methodName string) {
@@ -721,14 +724,14 @@ func testExtOrPortSetMetadataIndividual(t *testing.T, addr, methodName string) {
 	// fake an OKAY response.
 	err = extOrPortSendCommand(&buf.ReadBuf, extOrCmdOkay, []byte{})
 	if err != nil {
-		t.Fatal(err)
+		panic(err)
 	}
 	err = extOrPortSetMetadata(&buf, addr, methodName)
 	if err != nil {
 		t.Fatalf("error in extOrPortSetMetadata: %s", err)
 	}
 	for {
-		cmd, body, err := extOrPortRecvCommand(&buf.Buffer)
+		cmd, body, err := extOrPortRecvCommand(&buf.WriteBuf)
 		if err != nil {
 			t.Fatalf("error in extOrPortRecvCommand: %s", err)
 		}
