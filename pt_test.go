@@ -11,7 +11,10 @@ import (
 	"path"
 	"sort"
 	"testing"
+	"time"
 )
+
+const testAuthCookiePath = "test_authcookie"
 
 func TestErrors(t *testing.T) {
 	Stdout = ioutil.Discard
@@ -761,6 +764,142 @@ func TestExtOrPortSetMetadata(t *testing.T) {
 	testExtOrPortSetMetadataIndividual(t, addr, "")
 	testExtOrPortSetMetadataIndividual(t, "", methodName)
 	testExtOrPortSetMetadataIndividual(t, addr, methodName)
+}
+
+func simulateServerExtOrPortAuth(r io.Reader, w io.Writer, authCookie []byte) error {
+	// send auth types
+	_, err := w.Write([]byte{1, 0})
+	if err != nil {
+		return err
+	}
+	// read client auth type
+	buf := make([]byte, 1)
+	_, err = io.ReadFull(r, buf)
+	if err != nil {
+		return err
+	}
+	if buf[0] != 1 {
+		return fmt.Errorf("didn't get client auth type 1")
+	}
+	// read client nonce
+	clientNonce := make([]byte, 32)
+	_, err = io.ReadFull(r, clientNonce)
+	if err != nil {
+		return err
+	}
+	// send server hash and nonce
+	serverNonce := make([]byte, 32)
+	serverHash := computeServerHash(authCookie, clientNonce, serverNonce)
+	_, err = w.Write(serverHash)
+	if err != nil {
+		return err
+	}
+	_, err = w.Write(serverNonce)
+	if err != nil {
+		return err
+	}
+	// read client hash
+	clientHash := make([]byte, 32)
+	_, err = io.ReadFull(r, clientHash)
+	if err != nil {
+		return err
+	}
+	// send success status
+	_, err = w.Write([]byte{1})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type failSetDeadlineAfter struct {
+	n   int
+	err error
+}
+
+func (c *failSetDeadlineAfter) try() error {
+	if c.n > 0 {
+		c.n--
+		return nil
+	}
+	return c.err
+}
+
+func (c *failSetDeadlineAfter) SetDeadline(_ time.Time) error {
+	return c.try()
+}
+
+func (c *failSetDeadlineAfter) SetReadDeadline(_ time.Time) error {
+	return c.try()
+}
+
+func (c *failSetDeadlineAfter) SetWriteDeadline(_ time.Time) error {
+	return c.try()
+}
+
+// a fake Conn whose Set*Deadline functions fail after a certain number of
+// calls.
+type connFailSetDeadline struct {
+	io.Reader
+	io.Writer
+	failSetDeadlineAfter
+}
+
+func (c *connFailSetDeadline) Close() error {
+	return nil
+}
+
+func (c *connFailSetDeadline) LocalAddr() net.Addr {
+	return &net.IPAddr{net.IPv4(0, 0, 0, 0), ""}
+}
+
+func (c *connFailSetDeadline) RemoteAddr() net.Addr {
+	return &net.IPAddr{net.IPv4(0, 0, 0, 0), ""}
+}
+
+// Test that a failure of SetDeadline is reported.
+func TestExtOrPortSetupFailSetDeadline(t *testing.T) {
+	authCookie, err := readAuthCookieFile(testAuthCookiePath)
+	if err != nil {
+		panic(err)
+	}
+
+	// extOrPortSetup calls SetDeadline twice, so try failing the call after
+	// differing delays.
+	expectedErr := fmt.Errorf("distinguished error")
+	for _, delay := range []int{0, 1, 2} {
+		upstreamR, upstreamW := io.Pipe()
+		downstreamR, downstreamW := io.Pipe()
+
+		// mock ExtORPort to talk to
+		go func() {
+			// handle auth
+			err := simulateServerExtOrPortAuth(upstreamR, downstreamW, authCookie)
+			if err != nil {
+				return
+			}
+			// discard succeeding client data
+			go func() {
+				io.Copy(ioutil.Discard, upstreamR)
+			}()
+			// fake an OKAY response.
+			err = extOrPortSendCommand(downstreamW, extOrCmdOkay, []byte{})
+			if err != nil {
+				return
+			}
+		}()
+
+		// make a Conn that will fail SetDeadline after a certain number
+		// of calls.
+		s := &connFailSetDeadline{downstreamR, upstreamW, failSetDeadlineAfter{delay, expectedErr}}
+		serverInfo := &ServerInfo{AuthCookiePath: testAuthCookiePath}
+		err = extOrPortSetup(s, 1*time.Second, serverInfo, "", "")
+		if delay < 2 && err != expectedErr {
+			t.Fatalf("delay %v: expected error %v, got %v", delay, expectedErr, err)
+		} else if delay >= 2 && err != nil {
+			t.Fatalf("delay %v: got error %v", delay, err)
+		}
+	}
 }
 
 func TestMakeStateDir(t *testing.T) {
