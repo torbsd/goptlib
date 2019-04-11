@@ -1,3 +1,8 @@
+== v1.1.0
+
+Added the Log function.
+https://bugs.torproject.org/28940
+
 == v1.0.0
 
 Changed the tag naming scheme to work better with Go modules.
