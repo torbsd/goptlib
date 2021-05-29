@@ -1,3 +1,13 @@
+The default and development branch is now "main" rather than "master".
+The master branch will no longer be updated.
+https://lists.torproject.org/pipermail/anti-censorship-team/2021-May/000168.html
+If you have an existing clone of the master branch, run these commands
+to update it:
+	git fetch origin
+	git remote set-head origin -a
+	git branch --move master main
+	git branch --set-upstream-to=origin/main main
+
 == v1.1.0
 
 Added the Log function.
