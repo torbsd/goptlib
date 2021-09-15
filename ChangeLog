@@ -1,3 +1,5 @@
+== v1.2.0
+
 The default and development branch is now "main" rather than "master".
 The master branch will no longer be updated.
 https://lists.torproject.org/pipermail/anti-censorship-team/2021-May/000168.html
