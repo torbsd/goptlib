@@ -8,6 +8,9 @@ to update it:
 	git branch --move master main
 	git branch --set-upstream-to=origin/main main
 
+Added a go.mod file.
+https://bugs.torproject.org/tpo/anti-censorship/pluggable-transports/snowflake/40065
+
 == v1.1.0
 
 Added the Log function.
